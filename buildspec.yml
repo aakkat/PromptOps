@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      - pip install --upgrade awscli
+      - aws --version
+  pre_build:
+    commands:
+      - echo "Decrypting Docker password..."
+      - DOCKER_PASSWORD=$(aws ssm get-parameter --name tgsdockerpassword --with-decryption --query 'Parameter.Value' --output text)
+      - echo "Logging in to Docker Hub..."
+      - docker login -u aakkat -p $DOCKER_PASSWORD
+      - echo "Building Docker image..."
+      - docker build -t aakkat/tgsweb .
+  build:
+    commands:
+      - echo "Pushing Docker image to Docker Hub..."
+      - docker push aakkat/tgsweb
+  post_build:
+    commands:
+      - echo "Cleaning up..."
+      - docker logout
+
+artifacts:
+  files:
+    - '**/*'
